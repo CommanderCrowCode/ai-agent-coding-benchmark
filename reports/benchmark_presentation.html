@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agent Benchmark — Inventory Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --claude: #2563EB;
+  --glm: #7C3AED;
+  --codex: #059669;
+  --oss: #E11D48;
+  --kimi: #0D9488;
+  --nemotron: #EA580C;
+  --claude-light: #DBEAFE;
+  --glm-light: #EDE9FE;
+  --codex-light: #ECFDF5;
+  --oss-light: #FFE4E6;
+  --kimi-light: #CCFBF1;
+  --nemotron-light: #FFF7ED;
+  --slate-50: #F8FAFC;
+  --slate-100: #F1F5F9;
+  --slate-200: #E2E8F0;
+  --slate-300: #CBD5E1;
+  --slate-400: #94A3B8;
+  --slate-500: #64748B;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1E293B;
+  --slate-900: #0F172A;
+  --green-500: #22C55E;
+  --yellow-500: #EAB308;
+  --red-500: #EF4444;
+  --max-w: 1200px;
+  --section-pad: 80px;
+}
+
+html { scroll-behavior: smooth; font-size: 16px; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--slate-900);
+  background: #FFFFFF;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+
+/* ===== SCROLL ANIMATIONS ===== */
+.fade-in {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== NAV ===== */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--slate-200);
+  transition: box-shadow 0.3s;
+}
+nav.scrolled { box-shadow: 0 1px 8px rgba(0,0,0,0.06); }
+nav .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+}
+nav .brand {
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+  color: var(--slate-900);
+}
+nav .brand span { color: var(--slate-400); font-weight: 400; }
+nav ul { list-style: none; display: flex; gap: 4px; }
+nav ul li a {
+  text-decoration: none;
+  color: var(--slate-500);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+nav ul li a:hover { color: var(--slate-900); background: var(--slate-100); }
+
+/* ===== HERO ===== */
+.hero {
+  padding: 140px 0 var(--section-pad);
+  background: linear-gradient(180deg, var(--slate-50) 0%, #FFFFFF 100%);
+}
+.hero .overline {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--slate-400);
+  margin-bottom: 12px;
+}
+.hero h1 {
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--slate-900);
+  margin-bottom: 12px;
+}
+.hero .subtitle {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  color: var(--slate-500);
+  font-weight: 400;
+  max-width: 600px;
+  margin-bottom: 48px;
+}
+
+/* ===== SCORE CARDS ===== */
+.score-cards {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 20px;
+}
+.score-card {
+  background: #FFFFFF;
+  border: 1px solid var(--slate-200);
+  border-radius: 16px;
+  padding: 28px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.score-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+}
+.score-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+.score-card.claude::before { background: var(--claude); }
+.score-card.glm::before { background: var(--glm); }
+.score-card.codex::before { background: var(--codex); }
+.score-card.oss::before { background: var(--oss); }
+.score-card.kimi::before { background: var(--kimi); }
+.score-card.nemotron::before { background: var(--nemotron); }
+
+.score-card .card-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+.score-card.claude .card-label { color: var(--claude); }
+.score-card.glm .card-label { color: var(--glm); }
+.score-card.codex .card-label { color: var(--codex); }
+.score-card.oss .card-label { color: var(--oss); }
+.score-card.kimi .card-label { color: var(--kimi); }
+.score-card.nemotron .card-label { color: var(--nemotron); }
+
+.score-card .card-name {
+  font-size: 0.88rem;
+  color: var(--slate-500);
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.score-card .card-score {
+  font-size: 2.8rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.score-card.claude .card-score { color: var(--claude); }
+.score-card.glm .card-score { color: var(--glm); }
+.score-card.codex .card-score { color: var(--codex); }
+.score-card.oss .card-score { color: var(--oss); }
+.score-card.kimi .card-score { color: var(--kimi); }
+.score-card.nemotron .card-score { color: var(--nemotron); }
+
+.score-card .card-sub {
+  font-size: 0.82rem;
+  color: var(--slate-400);
+}
+.score-card .card-grade {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.score-card.claude .card-grade { background: var(--claude-light); color: var(--claude); }
+.score-card.glm .card-grade { background: var(--glm-light); color: var(--glm); }
+.score-card.codex .card-grade { background: var(--codex-light); color: var(--codex); }
+.score-card.oss .card-grade { background: var(--oss-light); color: var(--oss); }
+.score-card.kimi .card-grade { background: var(--kimi-light); color: var(--kimi); }
+.score-card.nemotron .card-grade { background: var(--nemotron-light); color: var(--nemotron); }
+
+/* ===== SECTIONS ===== */
+section { padding: var(--section-pad) 0; }
+section:nth-child(even) { background: var(--slate-50); }
+
+.section-header {
+  margin-bottom: 48px;
+}
+.section-header .section-overline {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--slate-400);
+  margin-bottom: 8px;
+}
+.section-header h2 {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--slate-900);
+  margin-bottom: 8px;
+}
+.section-header p {
+  font-size: 1rem;
+  color: var(--slate-500);
+  max-width: 560px;
+}
+
+/* ===== CHART CONTAINERS ===== */
+.chart-wrapper {
+  background: #FFFFFF;
+  border: 1px solid var(--slate-200);
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 32px;
+}
+.chart-wrapper h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--slate-800);
+  margin-bottom: 24px;
+}
+.chart-wrapper canvas { max-height: 450px; }
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ===== HEATMAP TABLE ===== */
+.heatmap-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.heatmap {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.heatmap th {
+  text-align: left;
+  padding: 10px 14px;
+  font-weight: 600;
+  color: var(--slate-600);
+  border-bottom: 2px solid var(--slate-200);
+  white-space: nowrap;
+}
+.heatmap th.col-claude { color: var(--claude); }
+.heatmap th.col-glm { color: var(--glm); }
+.heatmap th.col-codex { color: var(--codex); }
+.heatmap th.col-oss { color: var(--oss); }
+.heatmap th.col-kimi { color: var(--kimi); }
+.heatmap th.col-nemotron { color: var(--nemotron); }
+
+.heatmap td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--slate-100);
+}
+.heatmap td:first-child {
+  font-weight: 500;
+  color: var(--slate-700);
+  white-space: nowrap;
+}
+.heatmap td.weight {
+  color: var(--slate-400);
+  font-size: 0.78rem;
+}
+.heatmap .score-cell {
+  text-align: center;
+  font-weight: 600;
+  border-radius: 6px;
+  min-width: 56px;
+}
+.heatmap tbody tr:last-child td { border-bottom: 2px solid var(--slate-200); }
+.heatmap tfoot td { font-weight: 700; border-top: 2px solid var(--slate-300); padding: 10px 14px; }
+
+/* ===== HEAD-TO-HEAD ===== */
+.h2h-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.h2h-card {
+  background: #FFFFFF;
+  border: 1px solid var(--slate-200);
+  border-radius: 16px;
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+}
+.h2h-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+.h2h-card.claude::before { background: var(--claude); }
+.h2h-card.glm::before { background: var(--glm); }
+.h2h-card .h2h-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.h2h-card.claude .h2h-name { color: var(--claude); }
+.h2h-card.glm .h2h-name { color: var(--glm); }
+.h2h-card .h2h-agent {
+  font-size: 0.82rem;
+  color: var(--slate-400);
+  margin-bottom: 20px;
+}
+.h2h-card .h2h-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.h2h-stat {
+  background: var(--slate-50);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.h2h-stat .stat-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.h2h-card.claude .h2h-stat .stat-val { color: var(--claude); }
+.h2h-card.glm .h2h-stat .stat-val { color: var(--glm); }
+.h2h-stat .stat-label {
+  font-size: 0.72rem;
+  color: var(--slate-400);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pros-cons h4 {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+.pros-cons h4.strengths { color: #16A34A; }
+.pros-cons h4.weaknesses { color: var(--red-500); }
+.pros-cons ul {
+  list-style: none;
+  margin-bottom: 16px;
+}
+.pros-cons ul li {
+  padding: 5px 0;
+  font-size: 0.85rem;
+  color: var(--slate-600);
+  padding-left: 18px;
+  position: relative;
+}
+.pros-cons ul li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.pros-cons .str li::before { background: #BBF7D0; }
+.pros-cons .wk li::before { background: #FECACA; }
+
+/* ===== CAPABILITY MATRIX ===== */
+.cap-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 20px;
+}
+.cap-card {
+  background: #FFFFFF;
+  border: 1px solid var(--slate-200);
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.cap-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+.cap-card.claude::before { background: var(--claude); }
+.cap-card.glm::before { background: var(--glm); }
+.cap-card.codex::before { background: var(--codex); }
+.cap-card.oss::before { background: var(--oss); }
+.cap-card.kimi::before { background: var(--kimi); }
+.cap-card.nemotron::before { background: var(--nemotron); }
+.cap-card .cap-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.cap-card.claude .cap-name { color: var(--claude); }
+.cap-card.glm .cap-name { color: var(--glm); }
+.cap-card.codex .cap-name { color: var(--codex); }
+.cap-card.oss .cap-name { color: var(--oss); }
+.cap-card.kimi .cap-name { color: var(--kimi); }
+.cap-card.nemotron .cap-name { color: var(--nemotron); }
+.cap-card .cap-score {
+  font-size: 0.78rem;
+  color: var(--slate-400);
+  margin-bottom: 16px;
+}
+.cap-bar-list { margin-bottom: 20px; }
+.cap-bar-item { margin-bottom: 8px; }
+.cap-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--slate-500);
+  margin-bottom: 3px;
+}
+.cap-bar-track {
+  height: 6px;
+  background: var(--slate-100);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.cap-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s ease;
+}
+.cap-card.claude .cap-bar-fill { background: var(--claude); }
+.cap-card.glm .cap-bar-fill { background: var(--glm); }
+.cap-card.codex .cap-bar-fill { background: var(--codex); }
+.cap-card.oss .cap-bar-fill { background: var(--oss); }
+.cap-card.kimi .cap-bar-fill { background: var(--kimi); }
+.cap-card.nemotron .cap-bar-fill { background: var(--nemotron); }
+
+.cap-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.cap-tags span {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.cap-tags .good { background: #DCFCE7; color: #166534; }
+.cap-tags .bad { background: #FEE2E2; color: #991B1B; }
+
+/* ===== METHODOLOGY ===== */
+.methodology-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.method-card {
+  background: #FFFFFF;
+  border: 1px solid var(--slate-200);
+  border-radius: 16px;
+  padding: 28px;
+}
+.method-card h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--slate-800);
+  margin-bottom: 12px;
+}
+.method-card p, .method-card li {
+  font-size: 0.88rem;
+  color: var(--slate-500);
+  line-height: 1.7;
+}
+.method-card ul {
+  list-style: none;
+  margin-top: 8px;
+}
+.method-card ul li {
+  padding: 4px 0;
+  padding-left: 16px;
+  position: relative;
+}
+.method-card ul li::before {
+  content: ''; position: absolute; left: 0; top: 12px;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--slate-300);
+}
+.grade-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-top: 12px;
+}
+.grade-table th, .grade-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--slate-100);
+}
+.grade-table th { color: var(--slate-500); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ===== FOOTER ===== */
+footer {
+  padding: 40px 0;
+  border-top: 1px solid var(--slate-200);
+  text-align: center;
+}
+footer p {
+  font-size: 0.82rem;
+  color: var(--slate-400);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1400px) {
+  .score-cards { grid-template-columns: repeat(3, 1fr); }
+  .cap-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 1024px) {
+  .score-cards { grid-template-columns: repeat(2, 1fr); }
+  .two-col { grid-template-columns: 1fr; }
+  .h2h-grid { grid-template-columns: 1fr; }
+  .cap-grid { grid-template-columns: repeat(2, 1fr); }
+  .methodology-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  :root { --section-pad: 48px; }
+  .score-cards { grid-template-columns: 1fr; }
+  .cap-grid { grid-template-columns: 1fr; }
+  nav ul { display: none; }
+  .hero h1 { font-size: 1.8rem; }
+  .chart-wrapper { padding: 20px; }
+}
+
+/* ===== PRINT ===== */
+@media print {
+  nav { display: none; }
+  .hero { padding-top: 40px; }
+  section { padding: 32px 0; page-break-inside: avoid; }
+  .score-card, .chart-wrapper, .h2h-card, .cap-card, .method-card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    break-inside: avoid;
+  }
+  .fade-in { opacity: 1 !important; transform: none !important; }
+  body { font-size: 11pt; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav id="nav">
+  <div class="container">
+    <div class="brand">AI Agent Benchmark <span>/ 2025</span></div>
+    <ul>
+      <li><a href="#executive">Executive Summary</a></li>
+      <li><a href="#relative">Relative Rubric</a></li>
+      <li><a href="#absolute">Absolute Rubric</a></li>
+      <li><a href="#headtohead">Head-to-Head</a></li>
+      <li><a href="#capability">Capabilities</a></li>
+      <li><a href="#methodology">Methodology</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<header class="hero" id="top">
+  <div class="container">
+    <div class="overline">Comparative Analysis</div>
+    <h1>AI Agent Benchmark</h1>
+    <p class="subtitle">Inventory Management System &mdash; Six AI coding agents evaluated across 20 features, two independent rubrics, and 200 assessment points.</p>
+
+    <div class="score-cards fade-in" id="executive">
+      <div class="score-card glm">
+        <span class="card-grade">A+</span>
+        <div class="card-label">OpenCode GLM</div>
+        <div class="card-name">OpenCode + GLM model</div>
+        <div class="card-score">9.52</div>
+        <div class="card-sub">188 / 200 absolute &bull; S tier</div>
+      </div>
+      <div class="score-card claude">
+        <span class="card-grade">A+</span>
+        <div class="card-label">Claude Code</div>
+        <div class="card-name">Claude Code CLI</div>
+        <div class="card-score">9.51</div>
+        <div class="card-sub">190 / 200 absolute &bull; S tier</div>
+      </div>
+      <div class="score-card kimi">
+        <span class="card-grade">A</span>
+        <div class="card-label">OpenCode Kimi</div>
+        <div class="card-name">OpenCode + Kimi model</div>
+        <div class="card-score">8.76</div>
+        <div class="card-sub">179 / 200 absolute &bull; A tier</div>
+      </div>
+      <div class="score-card codex">
+        <span class="card-grade">B+</span>
+        <div class="card-label">Codex</div>
+        <div class="card-name">OpenAI Codex</div>
+        <div class="card-score">7.84</div>
+        <div class="card-sub">168 / 200 absolute &bull; A tier</div>
+      </div>
+      <div class="score-card nemotron">
+        <span class="card-grade">D</span>
+        <div class="card-label">OpenCode Nemotron</div>
+        <div class="card-name">OpenCode + Nemotron model</div>
+        <div class="card-score">4.26</div>
+        <div class="card-sub">41.5 / 200 absolute &bull; F tier</div>
+      </div>
+      <div class="score-card oss">
+        <span class="card-grade">F</span>
+        <div class="card-label">OpenCode OSS</div>
+        <div class="card-name">OpenCode + OSS model</div>
+        <div class="card-score">3.36</div>
+        <div class="card-sub">37 / 200 absolute &bull; F tier</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== RELATIVE RUBRIC ===== -->
+<section id="relative">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-overline">Weighted Feature Scores</div>
+      <h2>Relative Rubric Analysis</h2>
+      <p>Each of 20 features scored 0&ndash;10, weighted by importance. Higher weight reflects greater business criticality.</p>
+    </div>
+
+    <div class="two-col fade-in">
+      <div class="chart-wrapper">
+        <h3>Feature Category Radar</h3>
+        <canvas id="radarChart"></canvas>
+      </div>
+      <div class="chart-wrapper">
+        <h3>Weighted Score Distribution</h3>
+        <canvas id="stackedBar"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-wrapper fade-in">
+      <h3>Full Feature Heatmap &mdash; All 20 Features</h3>
+      <div class="heatmap-scroll">
+        <table class="heatmap" id="heatmapTable">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th class="weight">Weight</th>
+              <th class="col-glm">OpenCode GLM</th>
+              <th class="col-claude">Claude Code</th>
+              <th class="col-kimi">OpenCode Kimi</th>
+              <th class="col-codex">Codex</th>
+              <th class="col-nemotron">OpenCode Nemotron</th>
+              <th class="col-oss">OpenCode OSS</th>
+            </tr>
+          </thead>
+          <tbody id="heatmapBody"></tbody>
+          <tfoot id="heatmapFoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ABSOLUTE RUBRIC ===== -->
+<section id="absolute">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-overline">Absolute Scoring</div>
+      <h2>Absolute Rubric Analysis</h2>
+      <p>Eight assessment categories scored against a 200-point maximum. Tests functional completeness, not just feature presence.</p>
+    </div>
+
+    <div class="two-col fade-in">
+      <div class="chart-wrapper">
+        <h3>Score by Assessment Category</h3>
+        <canvas id="absBarChart"></canvas>
+      </div>
+      <div class="chart-wrapper">
+        <h3>Total Score Distribution (out of 200)</h3>
+        <canvas id="absTotalChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-wrapper fade-in">
+      <h3>Completion Rate by Category</h3>
+      <canvas id="completionChart"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ===== HEAD-TO-HEAD ===== -->
+<section id="headtohead">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-overline">Top Two Comparison</div>
+      <h2>Head-to-Head: OpenCode GLM vs Claude Code</h2>
+      <p>The two S-tier agents separated by just 0.01 on the relative rubric and 2 points on absolute scoring. Kimi (A, 8.76 / 179) and Codex (B+, 7.84 / 168) form a strong second tier.</p>
+    </div>
+
+    <div class="h2h-grid fade-in">
+      <div class="h2h-card glm">
+        <div class="h2h-name">OpenCode GLM</div>
+        <div class="h2h-agent">OpenCode + GLM model</div>
+        <div class="h2h-stat-grid">
+          <div class="h2h-stat"><div class="stat-val">9.52</div><div class="stat-label">Relative</div></div>
+          <div class="h2h-stat"><div class="stat-val">188</div><div class="stat-label">Absolute /200</div></div>
+          <div class="h2h-stat"><div class="stat-val">140</div><div class="stat-label">Tests Written</div></div>
+          <div class="h2h-stat"><div class="stat-val">~95%</div><div class="stat-label">Tests Pass</div></div>
+        </div>
+        <div class="pros-cons">
+          <h4 class="strengths">Strengths</h4>
+          <ul class="str">
+            <li>140 tests written (most comprehensive)</li>
+            <li>In-memory SQLite for fast test execution</li>
+            <li>Auth rate limiting implemented</li>
+            <li>Complete infra with SSL support</li>
+          </ul>
+          <h4 class="weaknesses">Weaknesses</h4>
+          <ul class="wk">
+            <li>Fernet/bleach listed but not used</li>
+            <li>Some test failures likely present</li>
+            <li>PO number generation bug</li>
+            <li>No graceful scheduler shutdown</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="h2h-card claude">
+        <div class="h2h-name">Claude Code</div>
+        <div class="h2h-agent">Claude Code CLI</div>
+        <div class="h2h-stat-grid">
+          <div class="h2h-stat"><div class="stat-val">9.51</div><div class="stat-label">Relative</div></div>
+          <div class="h2h-stat"><div class="stat-val">190</div><div class="stat-label">Absolute /200</div></div>
+          <div class="h2h-stat"><div class="stat-val">117</div><div class="stat-label">Tests Written</div></div>
+          <div class="h2h-stat"><div class="stat-val">100%</div><div class="stat-label">Tests Pass</div></div>
+        </div>
+        <div class="pros-cons">
+          <h4 class="strengths">Strengths</h4>
+          <ul class="str">
+            <li>All 117 tests pass at 100% rate</li>
+            <li>Every API endpoint fully functional</li>
+            <li>Complete business logic implementation</li>
+            <li>Pixel-perfect frontend dashboard</li>
+          </ul>
+          <h4 class="weaknesses">Weaknesses</h4>
+          <ul class="wk">
+            <li>Fernet/bleach listed but not used</li>
+            <li>No auth rate limiting implemented</li>
+            <li>File-based test SQLite (not in-memory)</li>
+            <li>No SSL configuration in Docker</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-wrapper fade-in" style="margin-top:24px;">
+      <h3>Feature-by-Feature Comparison (Top 2)</h3>
+      <canvas id="h2hChart"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CAPABILITY ===== -->
+<section id="capability">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-overline">Agent Profiles</div>
+      <h2>Capability Assessment</h2>
+      <p>Detailed strengths and weaknesses across key development dimensions for each agent.</p>
+    </div>
+
+    <div class="cap-grid fade-in">
+      <!-- OpenCode GLM -->
+      <div class="cap-card glm">
+        <div class="cap-name">OpenCode GLM</div>
+        <div class="cap-score">9.52 / 10 &bull; A+ &bull; 188/200</div>
+        <div class="cap-bar-list">
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>API Logic</span><span>97%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:97%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Testing</span><span>91%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:91%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Frontend</span><span>100%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:100%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Security</span><span>83%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:83%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Infrastructure</span><span>100%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:100%"></div></div>
+          </div>
+        </div>
+        <div class="cap-tags">
+          <span class="good">Full-stack</span>
+          <span class="good">Best infra</span>
+          <span class="bad">Minor bugs</span>
+        </div>
+      </div>
+
+      <!-- Claude Code -->
+      <div class="cap-card claude">
+        <div class="cap-name">Claude Code</div>
+        <div class="cap-score">9.51 / 10 &bull; A+ &bull; 190/200</div>
+        <div class="cap-bar-list">
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>API Logic</span><span>100%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:100%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Testing</span><span>95%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:95%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Frontend</span><span>100%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:100%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Security</span><span>65%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:65%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Infrastructure</span><span>80%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:80%"></div></div>
+          </div>
+        </div>
+        <div class="cap-tags">
+          <span class="good">Full-stack</span>
+          <span class="good">Test-driven</span>
+          <span class="bad">Security gaps</span>
+        </div>
+      </div>
+
+      <!-- OpenCode Kimi -->
+      <div class="cap-card kimi">
+        <div class="cap-name">OpenCode Kimi</div>
+        <div class="cap-score">8.76 / 10 &bull; A &bull; 179/200</div>
+        <div class="cap-bar-list">
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>API Logic</span><span>98%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:98%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Testing</span><span>83%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:83%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Frontend</span><span>100%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:100%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Security</span><span>68%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:68%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Infrastructure</span><span>85%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:85%"></div></div>
+          </div>
+        </div>
+        <div class="cap-tags">
+          <span class="good">Complete PO workflow</span>
+          <span class="good">Rich seed data</span>
+          <span class="bad">Test stubs</span>
+        </div>
+      </div>
+
+      <!-- Codex -->
+      <div class="cap-card codex">
+        <div class="cap-name">Codex</div>
+        <div class="cap-score">7.84 / 10 &bull; B+ &bull; 168/200</div>
+        <div class="cap-bar-list">
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>API Logic</span><span>86%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:86%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Testing</span><span>77%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:77%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Frontend</span><span>66%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:66%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Security</span><span>74%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:74%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Infrastructure</span><span>75%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:75%"></div></div>
+          </div>
+        </div>
+        <div class="cap-tags">
+          <span class="good">Complete schema</span>
+          <span class="good">Strong audit</span>
+          <span class="bad">No Fernet</span>
+        </div>
+      </div>
+
+      <!-- OpenCode Nemotron -->
+      <div class="cap-card nemotron">
+        <div class="cap-name">OpenCode Nemotron</div>
+        <div class="cap-score">4.26 / 10 &bull; D &bull; 41.5/200</div>
+        <div class="cap-bar-list">
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>API Logic</span><span>7%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:7%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Testing</span><span>0%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:0%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Frontend</span><span>75%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:75%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Security</span><span>33%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:33%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Infrastructure</span><span>100%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:100%"></div></div>
+          </div>
+        </div>
+        <div class="cap-tags">
+          <span class="good">Perfect Docker</span>
+          <span class="bad">Won't start</span>
+          <span class="bad">All tests crash</span>
+        </div>
+      </div>
+
+      <!-- OpenCode OSS -->
+      <div class="cap-card oss">
+        <div class="cap-name">OpenCode OSS</div>
+        <div class="cap-score">3.36 / 10 &bull; F &bull; 37/200</div>
+        <div class="cap-bar-list">
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>API Logic</span><span>18%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:18%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Testing</span><span>0%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:0%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Frontend</span><span>28%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:28%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Security</span><span>53%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:53%"></div></div>
+          </div>
+          <div class="cap-bar-item">
+            <div class="cap-bar-label"><span>Infrastructure</span><span>100%</span></div>
+            <div class="cap-bar-track"><div class="cap-bar-fill" style="width:100%"></div></div>
+          </div>
+        </div>
+        <div class="cap-tags">
+          <span class="good">Perfect Docker</span>
+          <span class="bad">Won't start</span>
+          <span class="bad">Mostly stubs</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== METHODOLOGY ===== -->
+<section id="methodology">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-overline">Assessment Framework</div>
+      <h2>Methodology</h2>
+      <p>Two complementary rubrics provide both breadth and depth evaluation of each agent's output.</p>
+    </div>
+
+    <div class="methodology-grid fade-in">
+      <div class="method-card">
+        <h3>Relative Rubric (Weighted /10)</h3>
+        <p>20 features scored 0&ndash;10 with weighted importance. Measures feature completeness, code quality, and adherence to specifications across the entire project surface area.</p>
+        <ul>
+          <li>Weights sum to 100%, reflecting business priority</li>
+          <li>Inventory Router (15%) has the highest weight</li>
+          <li>Testing Suite (12%) and Database Schema (10%) follow</li>
+          <li>Weighted average produces the final relative score</li>
+        </ul>
+      </div>
+      <div class="method-card">
+        <h3>Absolute Rubric (Points /200)</h3>
+        <p>Eight categories scored on a fixed point scale. Tests whether the application actually runs, passes tests, and implements correct business logic &mdash; not just whether code exists.</p>
+        <ul>
+          <li>"Does It Run?" (30 pts) &mdash; can the app actually start</li>
+          <li>"Test Suite" (35 pts) &mdash; test coverage and pass rate</li>
+          <li>"API Endpoints" (50 pts) &mdash; largest category</li>
+          <li>Security, Audit, Frontend round out assessment</li>
+        </ul>
+      </div>
+      <div class="method-card">
+        <h3>Grading Scale</h3>
+        <table class="grade-table">
+          <thead><tr><th>Grade</th><th>Relative</th><th>Absolute</th></tr></thead>
+          <tbody>
+            <tr><td><strong>S / A+</strong></td><td>9.0 &ndash; 10.0</td><td>180 &ndash; 200</td></tr>
+            <tr><td><strong>A / B</strong></td><td>7.0 &ndash; 8.9</td><td>140 &ndash; 179</td></tr>
+            <tr><td><strong>C / D</strong></td><td>5.0 &ndash; 6.9</td><td>100 &ndash; 139</td></tr>
+            <tr><td><strong>F</strong></td><td>&lt; 5.0</td><td>&lt; 100</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="method-card">
+        <h3>Task Specification</h3>
+        <p>All six agents received identical instructions to build a complete inventory management system with:</p>
+        <ul>
+          <li>FastAPI backend with SQLAlchemy ORM</li>
+          <li>JWT authentication with role-based access</li>
+          <li>Full CRUD for products, suppliers, purchase orders</li>
+          <li>Payment processing and inventory tracking</li>
+          <li>Background tasks, email utilities, audit logging</li>
+          <li>Frontend dashboard, Docker deployment, testing</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="container">
+    <p>AI Agent Benchmark &mdash; Inventory Management System &mdash; Comparative Analysis &mdash; February 2026</p>
+  </div>
+</footer>
+
+<script>
+// ===== DATA =====
+var COLORS = {
+  claude: '#2563EB',
+  glm: '#7C3AED',
+  codex: '#059669',
+  oss: '#E11D48',
+  kimi: '#0D9488',
+  nemotron: '#EA580C'
+};
+var COLORS_A = {
+  claude: 'rgba(37,99,235,0.15)',
+  glm: 'rgba(124,58,237,0.15)',
+  codex: 'rgba(5,150,105,0.15)',
+  oss: 'rgba(225,29,72,0.15)',
+  kimi: 'rgba(13,148,136,0.15)',
+  nemotron: 'rgba(234,88,12,0.15)'
+};
+
+var features = [
+  { id:'F01', name:'Project Structure', weight:5, claude:10.0, glm:10.0, codex:8.6, oss:4.0, kimi:9.0, nemotron:6.5 },
+  { id:'F02', name:'Database Schema', weight:10, claude:9.7, glm:9.7, codex:9.2, oss:0.5, kimi:9.3, nemotron:8.0 },
+  { id:'F03', name:'App Configuration', weight:5, claude:9.0, glm:9.5, codex:8.6, oss:5.5, kimi:8.0, nemotron:4.5 },
+  { id:'F04', name:'Auth Router', weight:8, claude:9.5, glm:10.0, codex:8.8, oss:7.0, kimi:9.5, nemotron:4.0 },
+  { id:'F05', name:'Products Router', weight:7, claude:9.75, glm:9.5, codex:8.8, oss:6.0, kimi:10.0, nemotron:6.0 },
+  { id:'F06', name:'Suppliers Router', weight:5, claude:10.0, glm:10.0, codex:8.4, oss:5.0, kimi:10.0, nemotron:1.0 },
+  { id:'F07', name:'Purchase Orders', weight:10, claude:10.0, glm:9.5, codex:8.9, oss:3.5, kimi:10.0, nemotron:4.0 },
+  { id:'F08', name:'Payments Router', weight:7, claude:10.0, glm:10.0, codex:8.8, oss:3.5, kimi:10.0, nemotron:0.5 },
+  { id:'F09', name:'Inventory Router', weight:15, claude:10.0, glm:10.0, codex:9.1, oss:1.0, kimi:9.0, nemotron:0.0 },
+  { id:'F10', name:'Dashboard Router', weight:5, claude:10.0, glm:10.0, codex:7.9, oss:0.5, kimi:10.0, nemotron:0.0 },
+  { id:'F11', name:'Audit Service', weight:8, claude:9.0, glm:8.0, codex:9.2, oss:5.0, kimi:8.5, nemotron:0.5 },
+  { id:'F12', name:'Inventory Monitor', weight:6, claude:10.0, glm:10.0, codex:9.0, oss:4.5, kimi:10.0, nemotron:1.5 },
+  { id:'F13', name:'Email Utility', weight:3, claude:10.0, glm:10.0, codex:7.9, oss:3.0, kimi:10.0, nemotron:0.0 },
+  { id:'F14', name:'Background Tasks', weight:3, claude:10.0, glm:9.0, codex:7.8, oss:2.0, kimi:5.0, nemotron:0.0 },
+  { id:'F15', name:'Frontend Dashboard', weight:7, claude:10.0, glm:10.0, codex:6.6, oss:4.0, kimi:10.0, nemotron:7.5 },
+  { id:'F16', name:'Docker/Nginx', weight:5, claude:8.0, glm:10.0, codex:7.5, oss:10.0, kimi:8.5, nemotron:10.0 },
+  { id:'F17', name:'DB Init Script', weight:4, claude:10.0, glm:10.0, codex:8.4, oss:0.0, kimi:10.0, nemotron:5.5 },
+  { id:'F18', name:'Testing Suite', weight:12, claude:9.5, glm:9.1, codex:8.8, oss:0.0, kimi:5.2, nemotron:0.0 },
+  { id:'F19', name:'Security', weight:8, claude:7.0, glm:7.5, codex:7.4, oss:5.0, kimi:6.75, nemotron:3.0 },
+  { id:'F20', name:'Business Logic', weight:7, claude:10.0, glm:9.5, codex:8.8, oss:2.5, kimi:8.0, nemotron:1.0 }
+];
+
+var absoluteData = [
+  { section:'Does It Run?', max:30, claude:30, glm:30, codex:28, oss:6, kimi:30, nemotron:5 },
+  { section:'Test Suite', max:35, claude:34, glm:32, codex:27, oss:0, kimi:29, nemotron:3.5 },
+  { section:'Schema Completeness', max:20, claude:18, glm:18, codex:18, oss:1.5, kimi:17, nemotron:15 },
+  { section:'API Endpoints', max:50, claude:50, glm:48.5, codex:43, oss:9, kimi:49, nemotron:3.5 },
+  { section:'Business Logic', max:25, claude:25, glm:24.5, codex:20, oss:3, kimi:22, nemotron:0.5 },
+  { section:'Security', max:20, claude:13, glm:16.5, codex:14, oss:10.5, kimi:13.5, nemotron:6.5 },
+  { section:'Audit Trail', max:10, claude:10, glm:8.5, codex:8, oss:4, kimi:8.5, nemotron:0 },
+  { section:'Frontend', max:10, claude:10, glm:10, codex:10, oss:2.75, kimi:10, nemotron:7.5 }
+];
+
+// ===== RADAR CHART — grouped categories =====
+var radarCategories = [
+  { label: 'Structure', features: ['F01','F03'] },
+  { label: 'Schema', features: ['F02','F17'] },
+  { label: 'Auth & Security', features: ['F04','F19'] },
+  { label: 'CRUD APIs', features: ['F05','F06','F07','F08'] },
+  { label: 'Inventory', features: ['F09','F10','F12'] },
+  { label: 'Services', features: ['F11','F13','F14'] },
+  { label: 'Frontend & Infra', features: ['F15','F16'] },
+  { label: 'Testing & Logic', features: ['F18','F20'] }
+];
+
+function avgForCategory(cat, key) {
+  var fs = cat.features.map(function(id) { return features.find(function(f) { return f.id === id; }); });
+  return fs.reduce(function(s, f) { return s + f[key]; }, 0) / fs.length;
+}
+
+var radarLabels = radarCategories.map(function(c) { return c.label; });
+var radarDatasets = [
+  { label: 'OpenCode GLM', data: radarCategories.map(function(c) { return +avgForCategory(c,'glm').toFixed(2); }), borderColor: COLORS.glm, backgroundColor: COLORS_A.glm, pointBackgroundColor: COLORS.glm, borderWidth: 2 },
+  { label: 'Claude Code', data: radarCategories.map(function(c) { return +avgForCategory(c,'claude').toFixed(2); }), borderColor: COLORS.claude, backgroundColor: COLORS_A.claude, pointBackgroundColor: COLORS.claude, borderWidth: 2 },
+  { label: 'OpenCode Kimi', data: radarCategories.map(function(c) { return +avgForCategory(c,'kimi').toFixed(2); }), borderColor: COLORS.kimi, backgroundColor: COLORS_A.kimi, pointBackgroundColor: COLORS.kimi, borderWidth: 2 },
+  { label: 'Codex', data: radarCategories.map(function(c) { return +avgForCategory(c,'codex').toFixed(2); }), borderColor: COLORS.codex, backgroundColor: COLORS_A.codex, pointBackgroundColor: COLORS.codex, borderWidth: 2 },
+  { label: 'OpenCode Nemotron', data: radarCategories.map(function(c) { return +avgForCategory(c,'nemotron').toFixed(2); }), borderColor: COLORS.nemotron, backgroundColor: COLORS_A.nemotron, pointBackgroundColor: COLORS.nemotron, borderWidth: 2 },
+  { label: 'OpenCode OSS', data: radarCategories.map(function(c) { return +avgForCategory(c,'oss').toFixed(2); }), borderColor: COLORS.oss, backgroundColor: COLORS_A.oss, pointBackgroundColor: COLORS.oss, borderWidth: 2 }
+];
+
+new Chart(document.getElementById('radarChart'), {
+  type: 'radar',
+  data: { labels: radarLabels, datasets: radarDatasets },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    scales: {
+      r: {
+        min: 0, max: 10,
+        ticks: { stepSize: 2, font: { family: 'Inter', size: 10 }, color: '#94A3B8', backdropColor: 'transparent' },
+        grid: { color: '#E2E8F0' },
+        angleLines: { color: '#E2E8F0' },
+        pointLabels: { font: { family: 'Inter', size: 11, weight: '500' }, color: '#334155' }
+      }
+    },
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 11 }, usePointStyle: true, pointStyle: 'circle', padding: 16 } }
+    }
+  }
+});
+
+// ===== STACKED BAR — Score Distribution by Priority Area =====
+var priorityAreas = [
+  { label: 'Core (Schema+Inv+PO)', features: ['F02','F07','F09'], totalWeight: 35 },
+  { label: 'APIs (Auth+CRUD+Pay)', features: ['F04','F05','F06','F08','F10'], totalWeight: 32 },
+  { label: 'Quality (Test+Logic+Security)', features: ['F18','F19','F20'], totalWeight: 27 },
+  { label: 'Services (Audit+Monitor+BG)', features: ['F11','F12','F13','F14'], totalWeight: 20 },
+  { label: 'Platform (Struct+Config+FE+Docker+DB)', features: ['F01','F03','F15','F16','F17'], totalWeight: 26 }
+];
+
+function weightedScoreForArea(area, key) {
+  return area.features.reduce(function(s, id) {
+    var f = features.find(function(x) { return x.id === id; });
+    return s + f[key] * (f.weight / 100);
+  }, 0);
+}
+
+new Chart(document.getElementById('stackedBar'), {
+  type: 'bar',
+  data: {
+    labels: ['OpenCode GLM', 'Claude Code', 'OpenCode Kimi', 'Codex', 'OpenCode Nemotron', 'OpenCode OSS'],
+    datasets: priorityAreas.map(function(area, i) {
+      var shades = ['#3B82F6','#60A5FA','#93C5FD','#BFDBFE','#DBEAFE'];
+      return {
+        label: area.label,
+        data: ['glm','claude','kimi','codex','nemotron','oss'].map(function(k) { return +weightedScoreForArea(area, k).toFixed(3); }),
+        backgroundColor: shades[i],
+        borderRadius: 2
+      };
+    })
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    scales: {
+      x: { stacked: true, grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } },
+      y: { stacked: true, max: 10, ticks: { font: { family: 'Inter', size: 10 }, color: '#94A3B8' }, grid: { color: '#F1F5F9' } }
+    },
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 10 }, usePointStyle: true, pointStyle: 'rect', padding: 12 } },
+      tooltip: {
+        callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(2); } }
+      }
+    }
+  }
+});
+
+// ===== HEATMAP TABLE (safe DOM construction) =====
+(function buildHeatmap() {
+  var tbody = document.getElementById('heatmapBody');
+  var tfoot = document.getElementById('heatmapFoot');
+
+  function scoreColor(v) {
+    if (v >= 9) return 'background:rgba(34,197,94,0.15);color:#166534;';
+    if (v >= 7) return 'background:rgba(34,197,94,0.08);color:#166534;';
+    if (v >= 5) return 'background:rgba(234,179,8,0.15);color:#92400E;';
+    if (v >= 3) return 'background:rgba(239,68,68,0.12);color:#991B1B;';
+    if (v > 0) return 'background:rgba(239,68,68,0.2);color:#7F1D1D;';
+    return 'background:rgba(239,68,68,0.3);color:#7F1D1D;';
+  }
+
+  function makeScoreCell(val) {
+    var td = document.createElement('td');
+    td.className = 'score-cell';
+    td.setAttribute('style', scoreColor(val));
+    td.textContent = val.toFixed(1);
+    return td;
+  }
+
+  features.forEach(function(f) {
+    var tr = document.createElement('tr');
+
+    var tdName = document.createElement('td');
+    tdName.textContent = f.id + ': ' + f.name;
+    tr.appendChild(tdName);
+
+    var tdWeight = document.createElement('td');
+    tdWeight.className = 'weight';
+    tdWeight.textContent = f.weight + '%';
+    tr.appendChild(tdWeight);
+
+    tr.appendChild(makeScoreCell(f.glm));
+    tr.appendChild(makeScoreCell(f.claude));
+    tr.appendChild(makeScoreCell(f.kimi));
+    tr.appendChild(makeScoreCell(f.codex));
+    tr.appendChild(makeScoreCell(f.nemotron));
+    tr.appendChild(makeScoreCell(f.oss));
+
+    tbody.appendChild(tr);
+  });
+
+  // Footer row
+  var footTr = document.createElement('tr');
+
+  var ftdLabel = document.createElement('td');
+  ftdLabel.textContent = 'Weighted Average';
+  footTr.appendChild(ftdLabel);
+
+  var ftdWeight = document.createElement('td');
+  ftdWeight.className = 'weight';
+  ftdWeight.textContent = '100%';
+  footTr.appendChild(ftdWeight);
+
+  var footScores = [
+    { val: '9.52', bg: '#EDE9FE', color: '#5B21B6' },
+    { val: '9.51', bg: '#DBEAFE', color: '#1E40AF' },
+    { val: '8.76', bg: '#CCFBF1', color: '#0F766E' },
+    { val: '7.84', bg: '#ECFDF5', color: '#065F46' },
+    { val: '4.26', bg: '#FFF7ED', color: '#C2410C' },
+    { val: '3.36', bg: '#FFE4E6', color: '#9F1239' }
+  ];
+  footScores.forEach(function(s) {
+    var td = document.createElement('td');
+    td.className = 'score-cell';
+    td.setAttribute('style', 'background:' + s.bg + ';color:' + s.color + ';');
+    td.textContent = s.val;
+    footTr.appendChild(td);
+  });
+
+  tfoot.appendChild(footTr);
+})();
+
+// ===== ABSOLUTE BAR CHART =====
+new Chart(document.getElementById('absBarChart'), {
+  type: 'bar',
+  data: {
+    labels: absoluteData.map(function(d) { return d.section; }),
+    datasets: [
+      { label: 'OpenCode GLM', data: absoluteData.map(function(d) { return d.glm; }), backgroundColor: COLORS.glm, borderRadius: 4, barPercentage: 0.7 },
+      { label: 'Claude Code', data: absoluteData.map(function(d) { return d.claude; }), backgroundColor: COLORS.claude, borderRadius: 4, barPercentage: 0.7 },
+      { label: 'OpenCode Kimi', data: absoluteData.map(function(d) { return d.kimi; }), backgroundColor: COLORS.kimi, borderRadius: 4, barPercentage: 0.7 },
+      { label: 'Codex', data: absoluteData.map(function(d) { return d.codex; }), backgroundColor: COLORS.codex, borderRadius: 4, barPercentage: 0.7 },
+      { label: 'OpenCode Nemotron', data: absoluteData.map(function(d) { return d.nemotron; }), backgroundColor: COLORS.nemotron, borderRadius: 4, barPercentage: 0.7 },
+      { label: 'OpenCode OSS', data: absoluteData.map(function(d) { return d.oss; }), backgroundColor: COLORS.oss, borderRadius: 4, barPercentage: 0.7 }
+    ]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: true,
+    scales: {
+      x: { grid: { color: '#F1F5F9' }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94A3B8' } },
+      y: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } }
+    },
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 11 }, usePointStyle: true, pointStyle: 'circle', padding: 16 } }
+    }
+  }
+});
+
+// ===== TOTAL SCORE BAR =====
+new Chart(document.getElementById('absTotalChart'), {
+  type: 'bar',
+  data: {
+    labels: ['OpenCode GLM', 'Claude Code', 'OpenCode Kimi', 'Codex', 'OpenCode Nemotron', 'OpenCode OSS'],
+    datasets: [{
+      data: [188, 190, 179, 168, 41.5, 37],
+      backgroundColor: [COLORS.glm, COLORS.claude, COLORS.kimi, COLORS.codex, COLORS.nemotron, COLORS.oss],
+      borderRadius: 8,
+      barPercentage: 0.55
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    scales: {
+      y: { max: 200, grid: { color: '#F1F5F9' }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94A3B8' } },
+      x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11, weight: '500' } } }
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: function(ctx) { return ctx.parsed.y + ' / 200'; } } }
+    }
+  }
+});
+
+// ===== COMPLETION RATE CHART =====
+new Chart(document.getElementById('completionChart'), {
+  type: 'bar',
+  data: {
+    labels: absoluteData.map(function(d) { return d.section; }),
+    datasets: [
+      { label: 'OpenCode GLM', data: absoluteData.map(function(d) { return +(d.glm/d.max*100).toFixed(1); }), backgroundColor: COLORS.glm, borderRadius: 3, barPercentage: 0.65 },
+      { label: 'Claude Code', data: absoluteData.map(function(d) { return +(d.claude/d.max*100).toFixed(1); }), backgroundColor: COLORS.claude, borderRadius: 3, barPercentage: 0.65 },
+      { label: 'OpenCode Kimi', data: absoluteData.map(function(d) { return +(d.kimi/d.max*100).toFixed(1); }), backgroundColor: COLORS.kimi, borderRadius: 3, barPercentage: 0.65 },
+      { label: 'Codex', data: absoluteData.map(function(d) { return +(d.codex/d.max*100).toFixed(1); }), backgroundColor: COLORS.codex, borderRadius: 3, barPercentage: 0.65 },
+      { label: 'OpenCode Nemotron', data: absoluteData.map(function(d) { return +(d.nemotron/d.max*100).toFixed(1); }), backgroundColor: COLORS.nemotron, borderRadius: 3, barPercentage: 0.65 },
+      { label: 'OpenCode OSS', data: absoluteData.map(function(d) { return +(d.oss/d.max*100).toFixed(1); }), backgroundColor: COLORS.oss, borderRadius: 3, barPercentage: 0.65 }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    scales: {
+      y: { max: 100, ticks: { callback: function(v) { return v + '%'; }, font: { family: 'Inter', size: 10 }, color: '#94A3B8' }, grid: { color: '#F1F5F9' } },
+      x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } }
+    },
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 11 }, usePointStyle: true, pointStyle: 'circle', padding: 16 } }
+    }
+  }
+});
+
+// ===== HEAD-TO-HEAD CHART =====
+new Chart(document.getElementById('h2hChart'), {
+  type: 'bar',
+  data: {
+    labels: features.map(function(f) { return f.id; }),
+    datasets: [
+      { label: 'OpenCode GLM', data: features.map(function(f) { return f.glm; }), backgroundColor: COLORS.glm, borderRadius: 3, barPercentage: 0.7 },
+      { label: 'Claude Code', data: features.map(function(f) { return f.claude; }), backgroundColor: COLORS.claude, borderRadius: 3, barPercentage: 0.7 }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    scales: {
+      y: { max: 10, ticks: { stepSize: 2, font: { family: 'Inter', size: 10 }, color: '#94A3B8' }, grid: { color: '#F1F5F9' } },
+      x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, maxRotation: 45 } }
+    },
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 11 }, usePointStyle: true, pointStyle: 'circle', padding: 16 } },
+      tooltip: { callbacks: { title: function(items) { var f = features[items[0].dataIndex]; return f.id + ': ' + f.name; } } }
+    }
+  }
+});
+
+// ===== SCROLL ANIMATIONS =====
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.fade-in').forEach(function(el) { observer.observe(el); });
+
+// ===== NAV SCROLL SHADOW =====
+window.addEventListener('scroll', function() {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 10);
+});
+</script>
+
+</body>
+</html>
