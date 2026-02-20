@@ -2,7 +2,7 @@
 
 A real-world evaluation of AI coding agents on a production-grade full-stack application. Six models, five agents each, one task.
 
-Published analysis: [Your Benchmark Is the Only One That Matters](https://tanwa.info) · [tanwa.info](https://tanwa.info)
+Published analysis: [Your Benchmark Is the Only One That Matters](https://flight-notes.ghost.io/your-benchmark-is-the-only-one-that-matters/) · [tanwa.info](https://tanwa.info)
 
 ---
 
